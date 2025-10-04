@@ -1,5 +1,8 @@
 package com.coursemanagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.*;
 import jakarta.persistence.*;
 import java.util.ArrayList;
@@ -20,13 +23,16 @@ public class Student extends BaseEntity {
     @Column(unique = true, nullable = false)
     private String email;
     
+    @JsonManagedReference("student-cart")
     @OneToOne(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Cart cart;
     
+    @JsonManagedReference("student-orders")
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<Order> orders = new ArrayList<>();
     
+    @JsonIgnoreProperties({"students", "teacher"})
     @ManyToMany
     @JoinTable(
         name = "student_courses",

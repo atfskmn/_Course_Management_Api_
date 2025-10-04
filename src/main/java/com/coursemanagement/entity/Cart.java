@@ -1,5 +1,7 @@
 package com.coursemanagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.*;
 import jakarta.persistence.*;
 import java.util.ArrayList;
@@ -18,10 +20,12 @@ public class Cart extends BaseEntity {
     @Builder.Default
     private Double totalPrice = 0.0;
     
+    @JsonBackReference("student-cart")
     @OneToOne
     @JoinColumn(name = "student_id", unique = true)
     private Student student;
     
+    @JsonManagedReference("cart-items")
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<CartItem> cartItems = new ArrayList<>();

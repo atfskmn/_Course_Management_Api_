@@ -1,5 +1,8 @@
 package com.coursemanagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import jakarta.persistence.*;
 import java.util.ArrayList;
@@ -15,6 +18,7 @@ import java.util.UUID;
 @Builder
 public class Order extends BaseEntity {
     
+    @JsonProperty("orderCode")
     @Column(name = "order_code", unique = true, nullable = false, updatable = false)
     private String orderCode;
     
@@ -26,10 +30,12 @@ public class Order extends BaseEntity {
     @Builder.Default
     private OrderStatus status = OrderStatus.PENDING;
     
+    @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
     
+    @JsonManagedReference
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();

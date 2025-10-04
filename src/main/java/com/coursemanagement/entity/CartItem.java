@@ -1,7 +1,9 @@
 package com.coursemanagement.entity;
 
-import lombok.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "cart_items", schema = "academicdb", uniqueConstraints = {
@@ -14,10 +16,12 @@ import jakarta.persistence.*;
 @Builder
 public class CartItem extends BaseEntity {
     
+    @JsonBackReference("cart-items")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cart_id", nullable = false)
     private Cart cart;
     
+    @JsonIgnoreProperties({"cartItems", "orderItems", "teacher", "students"})
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;

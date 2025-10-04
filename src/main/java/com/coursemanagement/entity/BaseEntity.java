@@ -1,5 +1,6 @@
 package com.coursemanagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import jakarta.persistence.*;
@@ -14,9 +15,11 @@ public abstract class BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
+    @JsonIgnore
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
     
+    @JsonIgnore
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     

@@ -1,5 +1,6 @@
 package com.coursemanagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.*;
 import jakarta.persistence.*;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ public class Teacher extends BaseEntity {
     @Column(unique = true, nullable = false)
     private String email;
     
+    @JsonManagedReference("teacher-courses")
     @OneToMany(mappedBy = "teacher", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<Course> courses = new ArrayList<>();
