@@ -30,7 +30,8 @@ public class CartService {
     private final CourseRepository courseRepository;
     private final StudentRepository studentRepository;
     
-    @Transactional(readOnly = true)
+    // Not read-only because it may create a new cart for the student on first access
+    @Transactional
     public CartResponse getCart(Long studentId) {
         Cart cart = cartRepository.findByStudentIdWithItems(studentId)
             .orElseGet(() -> createCartForStudent(studentId));
@@ -72,6 +73,15 @@ public class CartService {
         
         Course course = courseRepository.findById(courseId)
             .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + courseId));
+        
+        // Prevent adding a course the student already owns
+        Student student = studentRepository.findById(studentId)
+            .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + studentId));
+        boolean alreadyEnrolled = student.getEnrolledCourses().stream()
+            .anyMatch(c -> c.getId().equals(courseId));
+        if (alreadyEnrolled) {
+            throw new BusinessRuleException("You already own this course");
+        }
         
         if (!course.canEnroll()) {
             throw new BusinessRuleException("Course '" + course.getName() + "' is not available for enrollment");

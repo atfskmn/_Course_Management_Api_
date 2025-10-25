@@ -10,6 +10,8 @@ import com.coursemanagement.exception.ResourceNotFoundException;
 import com.coursemanagement.repository.CourseRepository;
 import com.coursemanagement.repository.TeacherRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,25 @@ public class TeacherService {
     
     private final TeacherRepository teacherRepository;
     private final CourseRepository courseRepository;
+
+    private Long getCurrentTeacherId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getPrincipal() == null) {
+            throw new BusinessRuleException("Kimlik doğrulaması bulunamadı");
+        }
+        Object principal = auth.getPrincipal();
+        if (principal instanceof com.coursemanagement.entity.User user) {
+            if (user.getRole() != com.coursemanagement.entity.Role.TEACHER) {
+                throw new BusinessRuleException("Sadece kendi öğretmen kayıtlarınızı yönetebilirsiniz");
+            }
+            Long entityId = user.getEntityId();
+            if (entityId == null) {
+                throw new BusinessRuleException("Öğretmen bilgisi eksik (entityId)");
+            }
+            return entityId;
+        }
+        throw new BusinessRuleException("Geçersiz kimlik bilgisi");
+    }
     
     public List<TeacherResponse> getTeachers() {
         return teacherRepository.findAll().stream()
@@ -51,6 +72,11 @@ public class TeacherService {
     
     @Transactional
     public TeacherResponse updateTeacher(Long id, TeacherRequest request) {
+        // Sadece kendi öğretmen kaydını güncelleyebilir
+        Long currentId = getCurrentTeacherId();
+        if (!currentId.equals(id)) {
+            throw new BusinessRuleException("Sadece kendi profilinizi güncelleyebilirsiniz");
+        }
         Teacher teacher = teacherRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Öğretmen bulunamadı. ID: " + id));
                 
@@ -67,6 +93,11 @@ public class TeacherService {
     
     @Transactional
     public void deleteTeacher(Long id) {
+        // Sadece kendi öğretmen kaydını silebilir (genelde silmek istenmez ama yine de sınırla)
+        Long currentId = getCurrentTeacherId();
+        if (!currentId.equals(id)) {
+            throw new BusinessRuleException("Sadece kendi profilinizi silebilirsiniz");
+        }
         Teacher teacher = teacherRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Öğretmen bulunamadı. ID: " + id));
         
@@ -89,6 +120,11 @@ public class TeacherService {
     
     @Transactional(readOnly = true)
     public List<Course> getAllCoursesForTeacher(Long teacherId) {
+        // Sadece kendi kurslarını listeleyebilir
+        Long currentId = getCurrentTeacherId();
+        if (!currentId.equals(teacherId)) {
+            throw new BusinessRuleException("Sadece kendi kurslarınızı görüntüleyebilirsiniz");
+        }
         if (!teacherRepository.existsById(teacherId)) {
             throw new ResourceNotFoundException("Öğretmen bulunamadı. ID: " + teacherId);
         }
@@ -97,6 +133,11 @@ public class TeacherService {
     
     @Transactional
     public Course createCourseForTeacher(Long teacherId, CourseRequest request) {
+        // Sadece kendi adına kurs oluşturabilir
+        Long currentId = getCurrentTeacherId();
+        if (!currentId.equals(teacherId)) {
+            throw new BusinessRuleException("Sadece kendi adınıza kurs oluşturabilirsiniz");
+        }
         Teacher teacher = teacherRepository.findById(teacherId)
             .orElseThrow(() -> new ResourceNotFoundException("Öğretmen bulunamadı. ID: " + teacherId));
         
@@ -107,12 +148,20 @@ public class TeacherService {
             .maxStudents(request.getMaxStudents())
             .teacher(teacher)
             .build();
+        if (request.getIsAvailable() != null) {
+            course.setIsAvailable(request.getIsAvailable());
+        }
         
         return courseRepository.save(course);
     }
     
     @Transactional
     public Course updateCourseForTeacher(Long teacherId, Long courseId, CourseRequest request) {
+        // Sadece kendi kurslarını güncelleyebilir
+        Long currentId = getCurrentTeacherId();
+        if (!currentId.equals(teacherId)) {
+            throw new BusinessRuleException("Sadece kendi kurslarınızı güncelleyebilirsiniz");
+        }
         Course course = courseRepository.findById(courseId)
             .orElseThrow(() -> new ResourceNotFoundException("Ders bulunamadı. ID: " + courseId));
         
@@ -128,12 +177,25 @@ public class TeacherService {
         course.setPrice(request.getPrice());
         course.setMaxStudents(request.getMaxStudents());
         course.setTeacher(teacher);
+        if (request.getIsAvailable() != null) {
+            // If capacity is full, availability cannot be forced open
+            if (Boolean.TRUE.equals(request.getIsAvailable()) && course.getCurrentStudentCount() >= course.getMaxStudents()) {
+                // keep it closed due to capacity
+            } else {
+                course.setIsAvailable(request.getIsAvailable());
+            }
+        }
         
         return courseRepository.save(course);
     }
     
     @Transactional
     public void deleteCourseForTeacher(Long teacherId, Long courseId) {
+        // Sadece kendi kurslarını silebilir
+        Long currentId = getCurrentTeacherId();
+        if (!currentId.equals(teacherId)) {
+            throw new BusinessRuleException("Sadece kendi kurslarınızı silebilirsiniz");
+        }
         Course course = courseRepository.findById(courseId)
             .orElseThrow(() -> new ResourceNotFoundException("Ders bulunamadı. ID: " + courseId));
         

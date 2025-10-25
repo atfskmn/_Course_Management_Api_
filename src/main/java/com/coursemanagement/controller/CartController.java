@@ -5,11 +5,13 @@ import com.coursemanagement.dto.CartResponse;
 import com.coursemanagement.service.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/carts")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('STUDENT')")
 public class CartController {
     
     private final CartService cartService;

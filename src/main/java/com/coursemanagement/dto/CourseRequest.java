@@ -21,6 +21,8 @@ public class CourseRequest {
     @Min(value = 1, message = "Max students must be at least 1")
     private Integer maxStudents;
     
-    @NotNull(message = "Teacher ID is required")
-    private Long teacherId;
+    // Optional manual availability toggle; if null, keep current value
+    private Boolean isAvailable;
+    
+    // teacherId is determined from path param and authenticated user; no need in request body
 }
